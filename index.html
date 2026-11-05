@@ -1322,20 +1322,38 @@
         return ci;
     }
 
-    function processGuess(raw) {
-        if (awaitingChoice) return;
-        const normalized = raw.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-        if (!normalized) return;
+    /* Name matching. Typing is checked after every keystroke, so a short name such as "uk" must not
+       fire while the player is still typing a longer one ("ukraine"). */
+    const normKey = str => str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/&/g, ' and ').replace(/['\u2019.]/g, '').replace(/[-\u2013_,]/g, ' ')
+        .replace(/\s+/g, ' ').trim().replace(/^the /, '');
+    const NAME_LOOKUP = new Map();   // normalised name or alias -> country id
+    Object.entries(COUNTRIES).forEach(([id, name]) => NAME_LOOKUP.set(normKey(name), +id));
+    Object.entries(ALIASES).forEach(([alias, id]) => { if (COUNTRIES[id] && !NAME_LOOKUP.has(normKey(alias))) NAME_LOOKUP.set(normKey(alias), id); });
 
-        let matchedId = null;
-        if (ALIASES[normalized] !== undefined) matchedId = ALIASES[normalized];
-        if (matchedId === null) {
-            for (const [id, name] of Object.entries(COUNTRIES)) {
-                if (name.toLowerCase() === normalized) { matchedId = +id; break; }
-            }
+    function matchCountry(raw) {
+        const id = NAME_LOOKUP.get(normKey(raw));
+        return id === undefined ? null : id;
+    }
+    function isPrefixOfOtherCountry(raw, id) {
+        const k = normKey(raw);
+        for (const [name, otherId] of NAME_LOOKUP) {
+            if (otherId !== id && name.length > k.length && name.startsWith(k)) return true;
         }
+        return false;
+    }
+
+    function processGuess(raw) {
+        if (awaitingChoice || document.querySelector('.completion-overlay.show')) return;   // a dialog is open
+        const matchedId = matchCountry(raw);
         if (matchedId === null || !COUNTRIES[matchedId]) return;
 
+        if (missed.has(matchedId)) {
+            showToast(COUNTRIES[matchedId]+' — already revealed','duplicate');
+            flyTo(matchedId);
+            input.value = '';
+            return;
+        }
         if (guessedCountries.has(matchedId)) {
             showToast(COUNTRIES[matchedId]+' — already found!','duplicate');
             flyTo(matchedId);
@@ -1364,6 +1382,7 @@
         if (count >= totalCountries) {
             stopTimer();
             recordCurrentGame('completed');
+            try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
             const m = Math.floor(seconds/60), s = seconds%60;
             document.getElementById('completionText').textContent =
                 'You named all '+totalCountries+' countries in '+m+'m '+s+'s!';
@@ -1424,6 +1443,7 @@
     let awaitingChoice = false;
 
     function saveProgress() {
+        if (awaitingChoice) return;   // the saved game is still waiting for the player's choice: don't overwrite it
         try {
             if (!guessedOrder.length && !missed.size) { localStorage.removeItem(SAVE_KEY); return; }
             localStorage.setItem(SAVE_KEY, JSON.stringify({
@@ -1551,11 +1571,22 @@
     });
     window.addEventListener('keydown', e => { if (e.key === 'Escape') hideRecords(); });
 
-    window.addEventListener('beforeunload', saveProgress);
+    window.addEventListener('beforeunload', () => { if (!gameRecorded || missed.size) saveProgress(); });
 
     /* ---------- Events ---------- */
-    input.addEventListener('input', function() { processGuess(this.value); });
-    input.addEventListener('keydown', function(e) { if (e.key==='Enter') processGuess(this.value); });
+    let guessTimer = null;
+    input.addEventListener('input', function() {
+        clearTimeout(guessTimer);
+        const v = this.value, id = matchCountry(v);
+        if (id === null) return;
+        if (isPrefixOfOtherCountry(v, id)) {
+            // e.g. "uk" / "niger" / "guinea": give the player time to keep typing; Enter submits straight away
+            guessTimer = setTimeout(() => { if (input.value === v) processGuess(v); }, 900);
+        } else processGuess(v);
+    });
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { clearTimeout(guessTimer); processGuess(this.value); }
+    });
 
     // Type anywhere: any printable key (or backspace) jumps focus into the guess box
     window.addEventListener('keydown', e => {
