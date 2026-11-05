@@ -344,6 +344,17 @@
         }
 
 
+        .guess-hint {
+            position: absolute; left: 6px; top: calc(100% + 8px);
+            padding: 5px 12px; border-radius: 999px;
+            background: rgba(79, 70, 229, 0.95); color: #fff;
+            font-size: 12px; font-weight: 600; white-space: nowrap;
+            opacity: 0; transform: translateY(-4px); pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+        }
+        .guess-hint.show { opacity: 1; transform: translateY(0); }
+
         /* Theme toggle */
         .btn-theme {
             width: 36px; height: 36px;
@@ -435,6 +446,7 @@
         <div class="input-wrapper">
             <span class="input-icon">🔍</span>
             <input type="text" class="guess-input" id="guessInput" placeholder="Just start typing a country..." autofocus autocomplete="off" spellcheck="false">
+            <div class="guess-hint" id="guessHint"></div>
         </div>
         <div class="score-panel">
             <div class="timer" id="timer">00:00</div>
@@ -743,6 +755,7 @@
         "democratic republic of the congo":180,
         "bosnia and herzegovina":70,"trinidad and tobago":780,
         "timor-leste":626,"eswatini":748,"myanmar":104,
+        "guinea bassau":624,"guinea bisau":624,"guinea bissao":624,"bissau":624,"guinea conakry":324,
         "st kitts":659,"saint kitts":659,"st kitts and nevis":659,"st kitts nevis":659,"nevis":659,
         "st lucia":662,"st vincent":670,"saint vincent":670,"st vincent and the grenadines":670,
         "antigua":28,"barbuda":28,"antigua barbuda":28,"sao tome":678,"sao tome and principe":678,
@@ -1347,6 +1360,7 @@
         if (awaitingChoice || document.querySelector('.completion-overlay.show')) return;   // a dialog is open
         const matchedId = matchCountry(raw);
         if (matchedId === null || !COUNTRIES[matchedId]) return;
+        document.getElementById('guessHint').classList.remove('show');
 
         if (missed.has(matchedId)) {
             showToast(COUNTRIES[matchedId]+' — already revealed','duplicate');
@@ -1574,18 +1588,21 @@
     window.addEventListener('beforeunload', () => { if (!gameRecorded || missed.size) saveProgress(); });
 
     /* ---------- Events ---------- */
-    let guessTimer = null;
+    /* A few names are also the start of a longer country (uk/ukraine, niger/nigeria, guinea/guinea-bissau,
+       dominica/dominican republic, congo/congo democratic republic). Those are never auto-submitted:
+       they need Enter, so the longer name can always be typed. Everything else submits instantly. */
+    const hint = document.getElementById('guessHint');
+    const hideHint = () => hint.classList.remove('show');
     input.addEventListener('input', function() {
-        clearTimeout(guessTimer);
         const v = this.value, id = matchCountry(v);
-        if (id === null) return;
+        if (id === null) { hideHint(); return; }
         if (isPrefixOfOtherCountry(v, id)) {
-            // e.g. "uk" / "niger" / "guinea": give the player time to keep typing; Enter submits straight away
-            guessTimer = setTimeout(() => { if (input.value === v) processGuess(v); }, 900);
-        } else processGuess(v);
+            hint.textContent = '\u21B5 Press Enter for ' + COUNTRIES[id];
+            hint.classList.add('show');
+        } else { hideHint(); processGuess(v); }
     });
     input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') { clearTimeout(guessTimer); processGuess(this.value); }
+        if (e.key === 'Enter') { hideHint(); processGuess(this.value); }
     });
 
     // Type anywhere: any printable key (or backspace) jumps focus into the guess box
