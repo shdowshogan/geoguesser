@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌍 Guess the Countries</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f4f8;
+            color: #1e293b;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Soft gradient background */
+        .bg-gradient {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 50%),
+                linear-gradient(180deg, #e8edf5 0%, #dce4f0 30%, #c9daf0 100%);
+            z-index: 0;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 32px;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 1px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-icon {
+            font-size: 30px;
+            animation: spin 20s linear infinite;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #4f46e5, #0891b2, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        /* Input */
+        .input-wrapper { position: relative; width: 360px; }
+        .guess-input {
+            width: 100%;
+            padding: 12px 20px 12px 46px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(99, 102, 241, 0.25);
+            border-radius: 14px;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+        .guess-input::placeholder { color: #94a3b8; font-weight: 400; }
+        .guess-input:focus {
+            border-color: #6366f1;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 2px 12px rgba(99, 102, 241, 0.08);
+        }
+        .input-icon {
+            position: absolute; left: 16px; top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px; opacity: 0.45;
+        }
+
+        /* Score */
+        .score-panel { display: flex; align-items: center; gap: 16px; }
+        .score-box {
+            min-width: 148px; flex-shrink: 0;
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 18px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .score-number {
+            min-width: 3.4ch; font-variant-numeric: tabular-nums;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 26px; font-weight: 700;
+            background: linear-gradient(135deg, #059669, #0891b2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .score-label {
+            font-size: 11px; font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase; letter-spacing: 1.2px;
+        }
+        .score-divider { font-size: 14px; color: #cbd5e1; }
+        .score-total {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 16px; font-weight: 600; color: #94a3b8;
+        }
+
+        /* Timer */
+        .timer {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px; font-weight: 600;
+            color: #64748b; letter-spacing: 1px;
+            /* fixed-size box so the ticking digits never push neighbouring elements around */
+            width: 92px; padding: 8px 0; text-align: center;
+            font-variant-numeric: tabular-nums;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            flex-shrink: 0;
+        }
+        body.dark .timer { background: rgba(30, 41, 59, 0.8); border-color: rgba(129, 140, 248, 0.25); }
+
+        /* Buttons */
+        .btn-reveal {
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 10px;
+            color: #dc2626;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .btn-reveal:hover {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+        .btn-reset {
+            padding: 8px 16px;
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 10px;
+            color: #4f46e5;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .btn-reset:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        /* Progress bar */
+        .progress-container {
+            position: fixed;
+            top: 69px; left: 0; right: 0;
+            height: 3px;
+            background: rgba(203, 213, 225, 0.5);
+            z-index: 99;
+        }
+        .progress-bar {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #6366f1, #06b6d4, #10b981);
+            border-radius: 0 3px 3px 0;
+            transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Globe */
+        #map-container {
+            position: fixed;
+            top: 72px; left: 0; right: 0; bottom: 0;
+            z-index: 1; cursor: grab;
+            touch-action: none;
+        }
+        #map-container.dragging { cursor: grabbing; }
+        #globe { width: 100%; height: 100%; display: block; }
+        #labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; contain: layout paint style; }
+        .globe-label {
+            position: absolute; left: 0; top: 0;
+            font-family: 'Inter', sans-serif; font-weight: 700;
+            color: #1e293b; white-space: nowrap;
+            -webkit-text-stroke: 3px rgba(255,255,255,0.88);
+            paint-order: stroke fill;
+            will-change: transform, opacity;
+        }
+        .globe-label.missed { color: #dc2626; }
+
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 40px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 14px 28px; border-radius: 16px;
+            font-weight: 600; font-size: 15px;
+            z-index: 200;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+            opacity: 0; pointer-events: none;
+            display: flex; align-items: center; gap: 10px;
+            backdrop-filter: blur(16px);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #047857;
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15);
+        }
+        .toast.duplicate {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #b45309;
+            box-shadow: 0 8px 32px rgba(245, 158, 11, 0.15);
+        }
+        .toast.complete {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #4338ca;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Zoom controls */
+        .zoom-controls {
+            position: fixed; bottom: 24px; right: 24px;
+            display: flex; flex-direction: column; gap: 8px;
+            z-index: 50;
+        }
+        .zoom-btn {
+            width: 42px; height: 42px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 12px;
+            color: #475569; font-size: 20px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            backdrop-filter: blur(10px);
+        }
+        .zoom-btn:hover {
+            background: #fff;
+            border-color: #6366f1;
+            color: #4f46e5;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12);
+        }
+
+        /* Recent guesses */
+        .recent-guesses {
+            position: fixed; bottom: 24px; left: 24px;
+            z-index: 50;
+            display: flex; flex-direction: column-reverse; gap: 6px;
+            max-height: 220px; overflow: hidden;
+        }
+        .recent-item {
+            padding: 7px 14px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            font-size: 12px; font-weight: 600;
+            color: #334155;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.3s ease-out;
+            display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .recent-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%; flex-shrink: 0;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            font-size: 13px; font-weight: 600;
+            color: #1e293b;
+            pointer-events: none; z-index: 150;
+            opacity: 0; transition: opacity 0.15s ease;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        /* Completion overlay */
+        .completion-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            z-index: 300;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .completion-overlay.show { opacity: 1; pointer-events: all; }
+        .completion-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 52px; font-weight: 800;
+            background: linear-gradient(135deg, #4f46e5, #0891b2, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+        .completion-subtitle {
+            font-size: 18px; color: #64748b; margin-bottom: 32px;
+        }
+        .completion-btn {
+            padding: 14px 40px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none; border-radius: 14px;
+            color: white; font-family: 'Inter', sans-serif;
+            font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+        }
+        .completion-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(99, 102, 241, 0.4);
+        }
+
+
+        /* Theme toggle */
+        .btn-theme {
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 10px;
+            font-size: 16px; cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-theme:hover { background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.4); }
+
+        .btn-theme.off { opacity: 0.45; }
+        .completion-btn.secondary {
+            background: transparent; color: #4f46e5; box-shadow: none;
+            border: 2px solid rgba(99, 102, 241, 0.4); margin-top: 12px;
+        }
+        .completion-btn.secondary:hover { background: rgba(99, 102, 241, 0.08); box-shadow: none; }
+        body.dark .completion-btn.secondary { color: #a5b4fc; border-color: rgba(129, 140, 248, 0.5); }
+
+        .records-panel {
+            width: min(520px, 92vw); max-height: 80vh;
+            display: flex; flex-direction: column;
+            background: #fff; border-radius: 20px; padding: 24px 24px 20px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+        }
+        .records-title { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+        .records-stats { font-size: 13px; color: #64748b; margin-bottom: 14px; line-height: 1.6; }
+        .records-list { overflow-y: auto; border-top: 1px solid rgba(148, 163, 184, 0.25); }
+        .record-row {
+            display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center;
+            padding: 10px 4px; border-bottom: 1px solid rgba(148, 163, 184, 0.2); font-size: 14px;
+        }
+        .record-date { color: #475569; }
+        .record-date small { display: block; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
+        .record-score { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; }
+        .record-time { color: #64748b; font-variant-numeric: tabular-nums; min-width: 64px; text-align: right; }
+        .record-row.best .record-score { color: #059669; }
+        .records-empty { padding: 28px 0; text-align: center; color: #94a3b8; }
+        .records-actions { display: flex; justify-content: space-between; margin-top: 14px; }
+        .records-clear { background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; }
+        .records-clear:hover { color: #dc2626; }
+        body.dark .records-panel { background: #1e293b; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+        body.dark .records-stats, body.dark .record-time { color: #94a3b8; }
+        body.dark .record-date { color: #cbd5e1; }
+        body.dark .record-row.best .record-score { color: #34d399; }
+
+        /* Dark mode */
+        body.dark { background: #0b1220; color: #e2e8f0; }
+        body.dark .bg-gradient {
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(99, 102, 241, 0.14) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+                linear-gradient(180deg, #070c18 0%, #0c1426 40%, #121d38 100%);
+        }
+        body.dark .header { background: rgba(15, 23, 42, 0.82); border-bottom-color: rgba(100, 116, 139, 0.25); box-shadow: 0 1px 12px rgba(0,0,0,0.4); }
+        body.dark .guess-input { background: rgba(30, 41, 59, 0.9); color: #f1f5f9; border-color: rgba(129, 140, 248, 0.35); }
+        body.dark .guess-input:focus { background: #1e293b; }
+        body.dark .guess-input::placeholder { color: #64748b; }
+        body.dark .score-box { background: rgba(30, 41, 59, 0.8); border-color: rgba(129, 140, 248, 0.25); }
+        body.dark .score-label, body.dark .score-total, body.dark .timer { color: #94a3b8; }
+        body.dark .score-divider { color: #475569; }
+        body.dark .progress-container { background: rgba(51, 65, 85, 0.6); }
+        body.dark .btn-theme { background: rgba(129, 140, 248, 0.12); border-color: rgba(129, 140, 248, 0.3); }
+        body.dark .btn-reset { color: #a5b4fc; }
+        body.dark .btn-reveal { color: #f87171; }
+        body.dark .zoom-btn { background: rgba(30, 41, 59, 0.88); border-color: rgba(100, 116, 139, 0.4); color: #cbd5e1; }
+        body.dark .zoom-btn:hover { background: #334155; border-color: #818cf8; color: #fff; }
+        body.dark .recent-item { background: rgba(30, 41, 59, 0.85); border-color: rgba(100, 116, 139, 0.3); color: #e2e8f0; }
+        body.dark .tooltip { background: rgba(30, 41, 59, 0.95); border-color: rgba(129, 140, 248, 0.3); color: #f1f5f9; }
+        body.dark .toast.success, body.dark .toast.duplicate, body.dark .toast.complete { background: rgba(30, 41, 59, 0.95); }
+        body.dark .toast.success { color: #6ee7b7; }
+        body.dark .toast.duplicate { color: #fcd34d; }
+        body.dark .toast.complete { color: #a5b4fc; }
+        body.dark .completion-overlay { background: rgba(11, 18, 32, 0.92); }
+        body.dark .completion-subtitle { color: #94a3b8; }
+        body.dark .globe-label { color: #f1f5f9; -webkit-text-stroke: 3px rgba(15, 23, 42, 0.9); }
+        body.dark .globe-label.missed { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <header class="header">
+        <div class="logo">
+            <span class="logo-icon">🌍</span>
+            <span class="logo-text">GeoGuesser</span>
+        </div>
+        <div class="input-wrapper">
+            <span class="input-icon">🔍</span>
+            <input type="text" class="guess-input" id="guessInput" placeholder="Just start typing a country..." autofocus autocomplete="off" spellcheck="false">
+        </div>
+        <div class="score-panel">
+            <div class="timer" id="timer">00:00</div>
+            <div class="score-box">
+                <div>
+                    <div class="score-number" id="scoreNumber">0</div>
+                    <div class="score-label">Found</div>
+                </div>
+                <span class="score-divider">/</span>
+                <span class="score-total" id="totalCountries">0</span>
+            </div>
+            <button class="btn-theme off" id="btnSat" title="Satellite view">🛰️</button>
+            <button class="btn-theme" id="btnRecords" title="Your previous records">🏆</button>
+            <button class="btn-theme" id="btnDayNight" title="Show / hide day &amp; night">🌗</button>
+            <button class="btn-theme" id="btnTheme" title="Toggle dark mode">🌙</button>
+            <button class="btn-reveal" id="btnReveal">Give Up</button>
+            <button class="btn-reset" id="btnReset">Reset</button>
+        </div>
+    </header>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div id="map-container"><canvas id="globe"></canvas><div id="labels"></div></div>
+
+    <div class="zoom-controls">
+        <button class="zoom-btn" id="zoomIn" title="Zoom in">+</button>
+        <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
+        <button class="zoom-btn" id="zoomReset" title="Reset view">⌂</button>
+    </div>
+
+    <div class="recent-guesses" id="recentGuesses"></div>
+    <div class="toast" id="toast"></div>
+    <div class="tooltip" id="tooltip"></div>
+
+    <div class="completion-overlay" id="recordsOverlay">
+        <div class="records-panel">
+            <div class="records-title">🏆 Your records</div>
+            <div class="records-stats" id="recordsStats"></div>
+            <div class="records-list" id="recordsList"></div>
+            <div class="records-actions">
+                <button class="records-clear" id="btnClearRecords">Clear history</button>
+                <button class="completion-btn" id="btnCloseRecords" style="padding:10px 28px;font-size:14px">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="completion-overlay" id="resumeOverlay">
+        <div class="completion-title" style="font-size:40px">Welcome back!</div>
+        <div class="completion-subtitle" id="resumeText"></div>
+        <button class="completion-btn" id="btnResume">Continue where I left off</button>
+        <button class="completion-btn secondary" id="btnFresh">Start fresh</button>
+    </div>
+
+    <div class="completion-overlay" id="completionOverlay">
+        <div class="completion-title">🎉 Incredible!</div>
+        <div class="completion-subtitle" id="completionText">You named all countries!</div>
+        <button class="completion-btn" onclick="resetGame()">Play Again</button>
+    </div>
+
+    <script src="d3.v7.min.js"></script>
+    <script src="topojson.v3.min.js"></script>
+    <script src="three.min.js"></script>
+    <script src="world-data.js"></script>
+    <script>
+    const COUNTRIES = {
+        4:"Afghanistan",
+        8:"Albania",
+        12:"Algeria",
+        20:"Andorra",
+        24:"Angola",
+        28:"Antigua and Barbuda",
+        32:"Argentina",
+        51:"Armenia",
+        36:"Australia",
+        40:"Austria",
+        31:"Azerbaijan",
+        44:"Bahamas",
+        48:"Bahrain",
+        50:"Bangladesh",
+        52:"Barbados",
+        112:"Belarus",
+        56:"Belgium",
+        84:"Belize",
+        204:"Benin",
+        64:"Bhutan",
+        68:"Bolivia",
+        70:"Bosnia and Herzegovina",
+        72:"Botswana",
+        76:"Brazil",
+        96:"Brunei",
+        100:"Bulgaria",
+        854:"Burkina Faso",
+        108:"Burundi",
+        116:"Cambodia",
+        120:"Cameroon",
+        124:"Canada",
+        132:"Cape Verde",
+        140:"Central African Republic",
+        148:"Chad",
+        152:"Chile",
+        156:"China",
+        170:"Colombia",
+        174:"Comoros",
+        178:"Congo",
+        188:"Costa Rica",
+        191:"Croatia",
+        192:"Cuba",
+        196:"Cyprus",
+        203:"Czech Republic",
+        180:"Democratic Republic of the Congo",
+        208:"Denmark",
+        262:"Djibouti",
+        212:"Dominica",
+        214:"Dominican Republic",
+        218:"Ecuador",
+        818:"Egypt",
+        222:"El Salvador",
+        226:"Equatorial Guinea",
+        232:"Eritrea",
+        233:"Estonia",
+        748:"Eswatini",
+        231:"Ethiopia",
+        242:"Fiji",
+        246:"Finland",
+        250:"France",
+        266:"Gabon",
+        270:"Gambia",
+        268:"Georgia",
+        276:"Germany",
+        288:"Ghana",
+        300:"Greece",
+        308:"Grenada",
+        320:"Guatemala",
+        324:"Guinea",
+        624:"Guinea-Bissau",
+        328:"Guyana",
+        332:"Haiti",
+        340:"Honduras",
+        348:"Hungary",
+        352:"Iceland",
+        356:"India",
+        360:"Indonesia",
+        364:"Iran",
+        368:"Iraq",
+        372:"Ireland",
+        376:"Israel",
+        380:"Italy",
+        384:"Ivory Coast",
+        388:"Jamaica",
+        392:"Japan",
+        400:"Jordan",
+        398:"Kazakhstan",
+        404:"Kenya",
+        296:"Kiribati",
+        383:"Kosovo",
+        414:"Kuwait",
+        417:"Kyrgyzstan",
+        418:"Laos",
+        428:"Latvia",
+        422:"Lebanon",
+        426:"Lesotho",
+        430:"Liberia",
+        434:"Libya",
+        438:"Liechtenstein",
+        440:"Lithuania",
+        442:"Luxembourg",
+        450:"Madagascar",
+        454:"Malawi",
+        458:"Malaysia",
+        462:"Maldives",
+        466:"Mali",
+        470:"Malta",
+        584:"Marshall Islands",
+        478:"Mauritania",
+        480:"Mauritius",
+        484:"Mexico",
+        583:"Micronesia",
+        498:"Moldova",
+        492:"Monaco",
+        496:"Mongolia",
+        499:"Montenegro",
+        504:"Morocco",
+        508:"Mozambique",
+        104:"Myanmar",
+        516:"Namibia",
+        520:"Nauru",
+        524:"Nepal",
+        528:"Netherlands",
+        554:"New Zealand",
+        558:"Nicaragua",
+        562:"Niger",
+        566:"Nigeria",
+        408:"North Korea",
+        807:"North Macedonia",
+        578:"Norway",
+        512:"Oman",
+        586:"Pakistan",
+        585:"Palau",
+        275:"Palestine",
+        591:"Panama",
+        598:"Papua New Guinea",
+        600:"Paraguay",
+        604:"Peru",
+        608:"Philippines",
+        616:"Poland",
+        620:"Portugal",
+        634:"Qatar",
+        642:"Romania",
+        643:"Russia",
+        646:"Rwanda",
+        659:"Saint Kitts and Nevis",
+        662:"Saint Lucia",
+        670:"Saint Vincent and the Grenadines",
+        882:"Samoa",
+        674:"San Marino",
+        678:"Sao Tome and Principe",
+        682:"Saudi Arabia",
+        686:"Senegal",
+        688:"Serbia",
+        690:"Seychelles",
+        694:"Sierra Leone",
+        702:"Singapore",
+        703:"Slovakia",
+        705:"Slovenia",
+        90:"Solomon Islands",
+        706:"Somalia",
+        710:"South Africa",
+        410:"South Korea",
+        728:"South Sudan",
+        724:"Spain",
+        144:"Sri Lanka",
+        729:"Sudan",
+        740:"Suriname",
+        752:"Sweden",
+        756:"Switzerland",
+        760:"Syria",
+        158:"Taiwan",
+        762:"Tajikistan",
+        834:"Tanzania",
+        764:"Thailand",
+        626:"Timor-Leste",
+        768:"Togo",
+        776:"Tonga",
+        780:"Trinidad and Tobago",
+        788:"Tunisia",
+        792:"Turkey",
+        795:"Turkmenistan",
+        798:"Tuvalu",
+        800:"Uganda",
+        804:"Ukraine",
+        784:"United Arab Emirates",
+        826:"United Kingdom",
+        840:"United States of America",
+        858:"Uruguay",
+        860:"Uzbekistan",
+        548:"Vanuatu",
+        336:"Vatican City",
+        862:"Venezuela",
+        704:"Vietnam",
+        887:"Yemen",
+        894:"Zambia",
+        716:"Zimbabwe"
+    };
+
+    const ALIASES = {
+        "usa":840,"us":840,"united states":840,"america":840,
+        "uk":826,"great britain":826,"britain":826,"england":826,
+        "uae":784,"emirates":784,
+        "dr congo":180,"drc":180,"congo democratic republic":180,
+        "democratic republic of congo":180,"zaire":180,
+        "republic of the congo":178,"congo republic":178,"congo brazzaville":178,
+        "south korea":410,"republic of korea":410,"korea":410,
+        "north korea":408,"dprk":408,
+        "cote d'ivoire":384,"cote divoire":384,"ivory coast":384,
+        "czech republic":203,"czechia":203,
+        "east timor":626,"timor leste":626,
+        "bosnia":70,"bosnia herzegovina":70,
+        "trinidad":780,"trinidad tobago":780,
+        "papua new guinea":598,"png":598,
+        "car":140,"central african rep":140,
+        "guinea bissau":624,"equatorial guinea":226,
+        "swaziland":748,"burma":104,
+        "russia":643,"russian federation":643,
+        "iran":364,"persia":364,"syria":760,
+        "laos":418,"lao":418,"brunei darussalam":96,
+        "solomon islands":90,
+        "cape verde":132,"cabo verde":132,
+        "vatican":336,"holy see":336,"vatican city":336,
+        "macedonia":807,"north macedonia":807,"fyrom":807,
+        "taiwan":158,"chinese taipei":158,
+        "palestine":275,"west bank":275,
+                "holland":528,"the netherlands":528,
+        "gambia":270,"the gambia":270,
+        "bahamas":44,"the bahamas":44,
+        "dominican republic":214,"dominican rep":214,
+        "el salvador":222,"sri lanka":144,"ceylon":144,
+        "new zealand":554,"nz":554,"aotearoa":554,
+        "saudi arabia":682,"saudi":682,"ksa":682,
+        "south africa":710,"rsa":710,"south sudan":728,
+        "burkina faso":854,"burkina":854,"sierra leone":694,
+        "costa rica":188,"united arab emirates":784,
+        "united kingdom":826,"united states of america":840,
+        "central african republic":140,
+        "democratic republic of the congo":180,
+        "bosnia and herzegovina":70,"trinidad and tobago":780,
+        "timor-leste":626,"eswatini":748,"myanmar":104,
+        "st kitts":659,"saint kitts":659,"st kitts and nevis":659,"st kitts nevis":659,"nevis":659,
+        "st lucia":662,"st vincent":670,"saint vincent":670,"st vincent and the grenadines":670,
+        "antigua":28,"barbuda":28,"antigua barbuda":28,"sao tome":678,"sao tome and principe":678,
+        "federated states of micronesia":583,"fsm":583,"state of palestine":275,
+        "republic of kosovo":383,"turkiye":792,"czech":203,"timor":626,"marshall":584,
+        "republic of ireland":372,"the congo":178,"cape verde islands":132
+    };
+
+    const PALETTE = [
+        {fill:'#818cf8', stroke:'#6366f1'}, {fill:'#a78bfa', stroke:'#8b5cf6'},
+        {fill:'#22d3ee', stroke:'#06b6d4'}, {fill:'#34d399', stroke:'#10b981'},
+        {fill:'#f472b6', stroke:'#ec4899'}, {fill:'#fb923c', stroke:'#f97316'},
+        {fill:'#a3e635', stroke:'#84cc16'}, {fill:'#2dd4bf', stroke:'#14b8a6'},
+        {fill:'#93c5fd', stroke:'#3b82f6'}, {fill:'#e879f9', stroke:'#d946ef'},
+        {fill:'#67e8f9', stroke:'#06b6d4'}, {fill:'#86efac', stroke:'#22c55e'}
+    ];
+    const DEFAULT_ROTATION = [-15, -20];
+
+    const guessedCountries = new Set();
+    let guessedOrder = [];
+    const colorOf = new Map();      // country id -> palette index
+    const missed = new Set();
+    let colorIndex = 0;
+    let timerInterval = null;
+    let seconds = 0;
+    let totalCountries = 0;
+
+    const input = document.getElementById('guessInput');
+
+    /* ---------- Timer / toast / tooltip / recent ---------- */
+    function startTimer() {
+        if (timerInterval) return;
+        timerInterval = setInterval(() => {
+            seconds++;
+            const m = String(Math.floor(seconds/60)).padStart(2,'0');
+            const s = String(seconds%60).padStart(2,'0');
+            document.getElementById('timer').textContent = m+':'+s;
+            if (seconds % 5 === 0) saveProgress();
+        }, 1000);
+    }
+    function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
+
+    function showToast(msg, type='success') {
+        const t = document.getElementById('toast');
+        const icons = {success:'✅',duplicate:'⚠️',complete:'🎉'};
+        t.className = 'toast '+type;
+        t.innerHTML = '<span>'+(icons[type]||'✅')+'</span> '+msg;
+        t.classList.add('show');
+        clearTimeout(t._to);
+        t._to = setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function showTooltip(x, y, text) {
+        const tip = document.getElementById('tooltip');
+        tip.textContent = text;
+        tip.style.left = (x+14)+'px';
+        tip.style.top = (y-34)+'px';
+        tip.style.opacity = 1;
+    }
+    function hideTooltip() { document.getElementById('tooltip').style.opacity = 0; }
+
+    function addRecentGuess(name, ci) {
+        const c = document.getElementById('recentGuesses');
+        const item = document.createElement('div');
+        item.className = 'recent-item';
+        item.innerHTML = '<span class="recent-dot" style="background:'+PALETTE[ci].fill+'"></span>'+name;
+        c.appendChild(item);
+        while (c.children.length > 6) c.removeChild(c.firstChild);
+    }
+
+    function getLabelSize(name) {
+        if (!name) return 8;
+        if (name.length > 20) return 5.5;
+        if (name.length > 14) return 6.5;
+        if (name.length > 8) return 7.5;
+        return 8.5;
+    }
+
+    /* ---------- 3D globe (WebGL via three.js) ---------- */
+    /* The map is painted once onto a texture that is wrapped around a sphere, so
+       spinning/zooming is done by the GPU. The texture is only touched when a guess changes. */
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const easeInOut = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+
+    const container = document.getElementById('map-container');
+    const canvas = document.getElementById('globe');
+    const labelLayer = document.getElementById('labels');
+    const FOV = 30;
+    const TEX_W = 4096, TEX_H = 2048, ID_W = 2048, ID_H = 1024;
+    let OCEAN = '#a9cde8', LAND = '#e2e8c6', BORDER = 'rgba(100,116,139,0.6)', GRAT = 'rgba(255,255,255,0.35)';
+
+    // Offscreen 2D canvases: the visible map texture, and a hidden "which country is here" lookup map
+    const texCanvas = document.createElement('canvas');
+    texCanvas.width = TEX_W; texCanvas.height = TEX_H;
+    const tctx = texCanvas.getContext('2d');
+    const texPath = d3.geoPath(d3.geoEquirectangular().scale(TEX_W/(2*Math.PI)).translate([TEX_W/2, TEX_H/2]).precision(0.1), tctx);
+    const idCanvas = document.createElement('canvas');
+    idCanvas.width = ID_W; idCanvas.height = ID_H;
+    const ictx = idCanvas.getContext('2d', {willReadFrequently: true});
+    const idPath = d3.geoPath(d3.geoEquirectangular().scale(ID_W/(2*Math.PI)).translate([ID_W/2, ID_H/2]), ictx);
+    const GRATICULE = d3.geoGraticule10();
+
+    let features = [];
+    const byId = new Map();   // country id -> [features]
+    const info = new Map();   // id -> { centroid:[lon,lat], extent:degrees }
+    const labels = new Map(); // id -> element
+    const pulses = [];
+
+    let W = 1, H = 1, baseRadius = 300;
+    let rotation = DEFAULT_ROTATION.slice();   // [-centerLon, -centerLat]
+    let zoomK = 1;
+    let anim = null;
+    let idle = true;
+    let dragging = false;
+    let needsRender = true;
+    let lastFrame = performance.now();
+    let curPR = Math.min(window.devicePixelRatio || 1, 2), frameEma = 16, slowFrames = 0;
+
+    /* three.js scene */
+    const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true, powerPreference: 'high-performance'});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(FOV, 1, 0.01, 100);
+    scene.add(camera);
+    const texture = new THREE.CanvasTexture(texCanvas);
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const globeMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 80, 56),
+        new THREE.ShaderMaterial({
+            uniforms: {
+                map: {value: texture},
+                sunDir: {value: new THREE.Vector3(1, 0, 0)},       // direction to the real Sun (updated from the clock)
+                nightMul: {value: new THREE.Vector3(0.3, 0.34, 0.54)},
+                dayNight: {value: 1.0}                              // 1 = show real day/night, 0 = lit evenly
+            },
+            vertexShader: `
+                varying vec2 vUv; varying vec3 vNW; varying vec3 vNV;
+                void main() {
+                    vUv = uv;
+                    vNW = normalize(normal);                    // the globe is never rotated, so object space = world space
+                    vNV = normalize(normalMatrix * normal);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }`,
+            fragmentShader: `
+                uniform sampler2D map; uniform vec3 sunDir; uniform vec3 nightMul; uniform float dayNight;
+                varying vec2 vUv; varying vec3 vNW; varying vec3 vNV;
+                void main() {
+                    vec3 col = texture2D(map, vUv).rgb;
+                    float d = dot(normalize(vNW), normalize(sunDir));
+                    float day = mix(1.0, smoothstep(-0.1, 0.12, d), dayNight);
+                    col *= mix(nightMul, vec3(1.0), day);
+                    col += vec3(1.0, 0.5, 0.15) * 0.10 * dayNight * exp(-pow(d / 0.09, 2.0));   // warm glow along the dawn/dusk line
+                    float limb = 0.68 + 0.4 * max(dot(normalize(vNV), normalize(vec3(-0.6, 0.8, 1.0))), 0.0);
+                    gl_FragColor = vec4(col * limb, 1.0);
+                }`
+        })
+    );
+    scene.add(globeMesh);
+
+    /* Real day/night: work out where the Sun is overhead right now (from the device clock) */
+    function sunDirectionNow() {
+        const now = new Date();
+        const start = Date.UTC(now.getUTCFullYear(), 0, 0);
+        const dayOfYear = (now - start) / 86400000;
+        const B = 2 * Math.PI / 365 * (dayOfYear - 81);
+        const eqTime = 9.87 * Math.sin(2*B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);   // minutes
+        const decl = 23.44 * Math.sin(2 * Math.PI / 365 * (dayOfYear - 81));            // degrees
+        const utcHours = now.getUTCHours() + now.getUTCMinutes()/60 + now.getUTCSeconds()/3600;
+        const lon = -15 * (utcHours - 12 + eqTime / 60);                                 // sub-solar longitude
+        return llToVec(lon, decl);
+    }
+    function updateSun() {
+        globeMesh.material.uniforms.sunDir.value.copy(sunDirectionNow());
+        needsRender = true;
+    }
+    setInterval(updateSun, 30000);
+
+    const atmosphere = new THREE.Mesh(
+        new THREE.SphereGeometry(1.13, 64, 48),
+        new THREE.ShaderMaterial({
+            vertexShader: 'varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+            fragmentShader: 'varying vec3 vN; void main(){ gl_FragColor = vec4(0.39,0.55,1.0, 0.55 * pow(clamp(-dot(vN, vec3(0.0,0.0,1.0)) * 1.8, 0.0, 1.0), 2.0)); }',
+            side: THREE.BackSide, transparent: true, depthWrite: false
+        })
+    );
+    scene.add(atmosphere);
+
+    function llToVec(lon, lat, r = 1) {
+        const a = lon * Math.PI/180, b = lat * Math.PI/180;
+        return new THREE.Vector3(r*Math.cos(b)*Math.cos(a), r*Math.sin(b), -r*Math.cos(b)*Math.sin(a));
+    }
+
+    function resizeCanvas() {
+        W = container.clientWidth; H = container.clientHeight;
+        renderer.setSize(W, H, false);
+        camera.aspect = W / H;
+        camera.updateProjectionMatrix();
+        baseRadius = Math.min(W, H) / 2 * 0.88;
+        needsRender = true;
+    }
+
+    /* Map type: stylised political map, or real satellite imagery (loaded on demand) */
+    let satMode = false;
+    let satImg = null;
+    const hexA = (hex, a) => {
+        const n = parseInt(hex.slice(1), 16);
+        return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+
+    /* Painting the map texture */
+    function paintFeature(f) {
+        const id = +f.id;
+        const tiny = false;
+        let fill = LAND, stroke = BORDER, lw = 1.2;
+        if (missed.has(id)) {
+            fill = '#f6b9b9'; stroke = '#f87171'; lw = tiny ? 3 : 1.8;
+        } else if (colorOf.has(id)) {
+            const p = PALETTE[colorOf.get(id)];
+            fill = p.fill; stroke = p.stroke; lw = tiny ? 4 : 2.2;   // tiny countries get a thicker outline so their real shape stays visible
+        }
+        tctx.beginPath(); texPath(f);
+        if (satMode) {
+            // satellite: keep the imagery visible, tint guessed countries and outline all borders
+            if (missed.has(id)) { fill = 'rgba(248,113,113,0.45)'; stroke = '#f87171'; }
+            else if (colorOf.has(id)) { const p = PALETTE[colorOf.get(id)]; fill = hexA(p.fill, 0.5); stroke = p.stroke; }
+            else { fill = null; stroke = 'rgba(255,255,255,0.45)'; lw = 1; }
+        }
+        if (fill) { tctx.fillStyle = fill; tctx.fill(); }
+        tctx.strokeStyle = stroke; tctx.lineWidth = lw; tctx.lineJoin = 'round'; tctx.stroke();
+    }
+    function repaintAll() {
+        if (satMode && satImg) {
+            tctx.drawImage(satImg, 0, 0, TEX_W, TEX_H);
+        } else {
+            tctx.fillStyle = OCEAN; tctx.fillRect(0, 0, TEX_W, TEX_H);
+            tctx.beginPath(); texPath(GRATICULE);
+            tctx.strokeStyle = GRAT; tctx.lineWidth = 1; tctx.stroke();
+        }
+        features.forEach(paintFeature);
+        texture.needsUpdate = true; needsRender = true;
+    }
+    /* Small countries also get a vector overlay built from the real polygon, so the shape stays sharp at any zoom */
+    const shapeGroups = new Map();
+    function isSmall(id) { return info.has(id) && info.get(id).extent < 4; }
+    function addShape(id) {
+        if (shapeGroups.has(id) || !isSmall(id)) return;
+        const isMissed = missed.has(id);
+        const pal = isMissed ? {fill:'#f6b9b9', stroke:'#f87171'} : PALETTE[colorOf.get(id)];
+        const fillMat = new THREE.MeshBasicMaterial({color: pal.fill, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, transparent: true, opacity: satMode ? 0.5 : 1});
+        const lineMat = new THREE.LineBasicMaterial({color: pal.stroke});
+        const group = new THREE.Group();
+        const R = 1.0012;
+        const unwrap = ring => {
+            let prev = ring[0][0];
+            return ring.map(([lon, lat]) => { prev = prev + ((lon - prev + 540) % 360 + 360) % 360 - 180; return [prev, lat]; });
+        };
+        (byId.get(id) || []).forEach(f => {
+            const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+            polys.forEach(rings => {
+                const pts = rings.map(r => unwrap(r).map(([x, y]) => new THREE.Vector2(x, y)));
+                const shape = new THREE.Shape(pts[0]);
+                for (let i = 1; i < pts.length; i++) shape.holes.push(new THREE.Path(pts[i]));
+                const geo = new THREE.ShapeGeometry(shape);
+                const pos = geo.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    const v = llToVec(pos.getX(i), pos.getY(i), R);
+                    pos.setXYZ(i, v.x, v.y, v.z);
+                }
+                group.add(new THREE.Mesh(geo, fillMat));
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(pts[0].map(p => llToVec(p.x, p.y, R + 0.0003)));
+                group.add(new THREE.LineLoop(lineGeo, lineMat));
+            });
+        });
+        scene.add(group);
+        group.userData.fillMat = fillMat;
+        shapeGroups.set(id, group);
+        needsRender = true;
+    }
+    function applyShapeMode() {
+        shapeGroups.forEach(g => { g.userData.fillMat.opacity = satMode ? 0.5 : 1; });
+    }
+    function clearShapes() {
+        shapeGroups.forEach(g => { scene.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); });
+        shapeGroups.clear();
+    }
+    function paintCountry(id) {
+        addShape(id);
+        (byId.get(id) || []).forEach(paintFeature);
+        texture.needsUpdate = true; needsRender = true;
+    }
+
+    function initGlobe() {
+        features = topojson.feature(WORLD_DATA, WORLD_DATA.objects.countries).features;
+
+        // Some polygons in the 10m data wind the wrong way (e.g. Maldives) and would fill the whole globe: flip them
+        const fixPoly = rings => {
+            if (d3.geoArea({type:'Polygon', coordinates: rings}) > 2 * Math.PI) rings.forEach(r => r.reverse());
+        };
+        features.forEach(f => {
+            if (f.geometry.type === 'Polygon') fixPoly(f.geometry.coordinates);
+            else if (f.geometry.type === 'MultiPolygon') f.geometry.coordinates.forEach(fixPoly);
+        });
+
+        // Map-data quirks: Kosovo has no id; Somaliland and Northern Cyprus are drawn as part of Somalia / Cyprus
+        features.forEach(f => {
+            const n = f.properties && f.properties.name;
+            if (n === 'Kosovo') f.id = 383;
+            else if (n === 'Somaliland') f.id = 706;
+            else if (n === 'N. Cyprus') f.id = 196;
+        });
+
+        totalCountries = Object.keys(COUNTRIES).length;
+        const primary = new Map();   // id -> biggest feature (for centroid)
+        features.forEach(f => {
+            const id = +f.id;
+            if (!COUNTRIES[id]) return;
+            if (!byId.has(id)) byId.set(id, []);
+            byId.get(id).push(f);
+
+            // Use the largest polygon so far-flung territories don't skew the target
+            let main = f, mainArea = 0;
+            if (f.geometry.type === 'MultiPolygon') {
+                let best = null, bestArea = -1;
+                f.geometry.coordinates.forEach(coords => {
+                    const poly = {type:'Polygon', coordinates: coords};
+                    const a = d3.geoArea(poly);
+                    if (a > bestArea) { bestArea = a; best = poly; }
+                });
+                main = {type:'Feature', properties:{}, geometry: best};
+                mainArea = bestArea;
+            } else mainArea = d3.geoArea(f);
+            if (primary.has(id) && primary.get(id) >= mainArea) return;
+            primary.set(id, mainArea);
+
+            const centroid = d3.geoCentroid(main);
+            const b = d3.geoBounds(main);
+            let lonSpan = b[1][0] - b[0][0];
+            if (lonSpan < 0) lonSpan += 360;
+            const extent = Math.max(lonSpan * Math.cos(centroid[1] * Math.PI/180), b[1][1] - b[0][1]);
+            info.set(id, {centroid, extent});
+        });
+        document.getElementById('totalCountries').textContent = totalCountries;
+
+        // Hidden lookup map: each country filled with a colour that encodes its id
+        ictx.fillStyle = '#000'; ictx.fillRect(0, 0, ID_W, ID_H);
+        byId.forEach((fs, id) => {
+            ictx.fillStyle = 'rgb(' + (id >> 8) + ',' + (id & 255) + ',255)';
+            fs.forEach(f => { ictx.beginPath(); idPath(f); ictx.fill(); });
+        });
+
+        resizeCanvas();
+        repaintAll();
+        requestAnimationFrame(frame);
+    }
+
+    /* Rendering */
+    function placeCamera() {
+        const Rpx = baseRadius * zoomK;
+        const t = Rpx * Math.tan(FOV * Math.PI / 360) / (H / 2);
+        const dist = Math.sqrt(1 + t*t) / t;
+        const lat = clamp(-rotation[1], -85, 85);
+        camera.position.copy(llToVec(-rotation[0], lat, dist));
+        camera.up.set(0, 1, 0);
+        camera.lookAt(0, 0, 0);
+        camera.updateMatrixWorld();
+    }
+
+    const _v = new THREE.Vector3();
+    function updateLabels() {
+        const camPos = camera.position;
+        labels.forEach((el, id) => {
+            _v.copy(el._vec);
+            const facing = _v.dot(camPos) - 1;   // > 0 when the point is on the visible hemisphere
+            const alpha = clamp(facing / (camPos.length() * 0.1), 0, 1);
+            if (alpha <= 0) {
+                if (el._vis !== 0) { el.style.opacity = 0; el._vis = 0; }
+                return;
+            }
+            _v.project(camera);
+            const x = (_v.x * 0.5 + 0.5) * W, y = (-_v.y * 0.5 + 0.5) * H;
+            const s = Math.min(26 / el._base, 0.7 + 0.3 * zoomK);
+            el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,' + (el._small ? '-140%' : '-50%') + ') scale(' + s.toFixed(3) + ')';
+            el.style.opacity = alpha * (el._missed ? 0.8 : 1);
+            el._vis = 1;
+        });
+    }
+
+    function addLabel(id, isMissed) {
+        if (labels.has(id) || !info.has(id)) return;
+        const el = document.createElement('div');
+        el.className = 'globe-label' + (isMissed ? ' missed' : '');
+        el.textContent = COUNTRIES[id];
+        el._base = getLabelSize(COUNTRIES[id]) * 1.6;
+        el._missed = isMissed;
+        el._vec = llToVec(info.get(id).centroid[0], info.get(id).centroid[1]);
+        el._small = info.get(id).extent < 1.5;
+        el.style.fontSize = el._base + 'px';
+        labelLayer.appendChild(el);
+        labels.set(id, el);
+    }
+    function clearLabels() { labels.clear(); labelLayer.innerHTML = ''; }
+
+    const ringGeo = new THREE.RingGeometry(0.82, 1, 48);
+    function addPulse(id) {
+        const inf = info.get(id);
+        if (!inf) return;
+        const v = llToVec(inf.centroid[0], inf.centroid[1]);
+        const mat = new THREE.MeshBasicMaterial({color: 0x4f46e5, transparent: true, side: THREE.DoubleSide, depthWrite: false});
+        const mesh = new THREE.Mesh(ringGeo, mat);
+        mesh.position.copy(v).multiplyScalar(1.003);
+        mesh.lookAt(v.clone().multiplyScalar(2));
+        scene.add(mesh);
+        pulses.push({mesh, start: performance.now(), size: 0.02 + Math.max(inf.extent, 2) * Math.PI/180 * 0.7});
+    }
+    function clearPulses() { pulses.forEach(p => { scene.remove(p.mesh); p.mesh.material.dispose(); }); pulses.length = 0; }
+
+    function frame(now) {
+        requestAnimationFrame(frame);
+        const dt = Math.min(0.1, (now - lastFrame) / 1000);
+        lastFrame = now;
+        let dirty = needsRender;
+
+        if (anim) {
+            const t = Math.min(1, (now - anim.start) / anim.dur);
+            const e = easeInOut(t);
+            rotation = [anim.from[0] + anim.dLon * e, anim.from[1] + (anim.toLat - anim.from[1]) * e];
+            zoomK = anim.k0 + (anim.k1 - anim.k0) * e;
+            if (t >= 1) anim = null;
+            dirty = true;
+        } else if (idle && !dragging) {
+            rotation[0] += 6 * dt;   // gentle spin until the player interacts
+            dirty = true;
+        }
+
+        for (let i = pulses.length - 1; i >= 0; i--) {
+            const p = pulses[i];
+            const t = (now - p.start) / 1000;
+            if (t >= 1) { scene.remove(p.mesh); p.mesh.material.dispose(); pulses.splice(i, 1); }
+            else {
+                const s = p.size * (0.25 + 0.75 * (1 - Math.pow(1 - t, 3)));
+                p.mesh.scale.set(s, s, s);
+                p.mesh.material.opacity = 0.85 * (1 - t);
+            }
+            dirty = true;
+        }
+
+        if (dirty) {
+            needsRender = false;
+            placeCamera();
+            renderer.render(scene, camera);
+            updateLabels();
+            // if frames keep taking too long, quietly lower the render resolution
+            frameEma = frameEma * 0.9 + dt * 1000 * 0.1;
+            if (frameEma > 26 && curPR > 1) {
+                if (++slowFrames > 30) {
+                    curPR = Math.max(1, curPR - 0.25);
+                    renderer.setPixelRatio(curPR); renderer.setSize(W, H, false);
+                    slowFrames = 0; frameEma = 16;
+                }
+            } else slowFrames = 0;
+        }
+    }
+
+    /* Camera moves */
+    function animateTo(lon, lat, k, dur) {
+        const dLon = ((-lon - rotation[0] + 540) % 360 + 360) % 360 - 180;
+        anim = {
+            start: performance.now(),
+            dur: dur,
+            from: rotation.slice(),
+            dLon: dLon,
+            toLat: clamp(-lat, -80, 80),
+            k0: zoomK,
+            k1: k
+        };
+        return dur;
+    }
+
+    function flyTo(id) {
+        const inf = info.get(id);
+        if (!inf) return 0;
+        idle = false;
+        let k = clamp(180 / (Math.max(inf.extent, 1) * 4), 1, 2.2);
+        if (inf.extent < 3) k = 2.2 + (3 - Math.max(inf.extent, 0.3)) / 2.7 * 1.8;   // tiny countries: zoom right in
+        return animateTo(inf.centroid[0], inf.centroid[1], k, 1100);
+    }
+
+    function viewCenter() { return [-rotation[0], -rotation[1]]; }
+    function zoomBy(factor) {
+        idle = false;
+        const c = viewCenter();
+        animateTo(c[0], c[1], clamp(zoomK * factor, 0.7, 10), 300);
+    }
+
+    /* Drag to rotate, wheel to zoom */
+    let lastPointer = null;
+    container.addEventListener('pointerdown', e => {
+        dragging = true; idle = false; anim = null;
+        lastPointer = [e.clientX, e.clientY];
+        container.classList.add('dragging');
+        container.setPointerCapture(e.pointerId);
+        hideTooltip();
+    });
+    container.addEventListener('pointermove', e => {
+        if (dragging && lastPointer) {
+            const f = 180 / (Math.PI * baseRadius * zoomK);
+            rotation[0] += (e.clientX - lastPointer[0]) * f;
+            rotation[1] = clamp(rotation[1] - (e.clientY - lastPointer[1]) * f, -90, 90);
+            lastPointer = [e.clientX, e.clientY];
+            needsRender = true;
+        } else {
+            scheduleHover(e);
+        }
+    });
+    const endDrag = () => { dragging = false; lastPointer = null; container.classList.remove('dragging'); };
+    container.addEventListener('pointerup', endDrag);
+    container.addEventListener('pointercancel', endDrag);
+    container.addEventListener('pointerleave', hideTooltip);
+    container.addEventListener('wheel', e => {
+        e.preventDefault();
+        idle = false; anim = null;
+        zoomK = clamp(zoomK * Math.exp(-e.deltaY * 0.0015), 0.7, 10);
+        needsRender = true;
+    }, {passive:false});
+
+    /* Hover: ray from the cursor onto the sphere, then an O(1) lookup in the hidden id map */
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    const _hit = new THREE.Vector3();
+    function pickCountry(x, y) {
+        ndc.set(x / W * 2 - 1, -(y / H) * 2 + 1);
+        raycaster.setFromCamera(ndc, camera);
+        const o = raycaster.ray.origin, dv = raycaster.ray.direction;
+        const b = o.dot(dv), disc = b * b - (o.dot(o) - 1);
+        if (disc < 0) return null;
+        const t = -b - Math.sqrt(disc);
+        if (t < 0) return null;
+        _hit.copy(dv).multiplyScalar(t).add(o);
+        const lon = Math.atan2(-_hit.z, _hit.x) * 180 / Math.PI, lat = Math.asin(clamp(_hit.y, -1, 1)) * 180 / Math.PI;
+        const px = clamp(Math.floor((lon + 180) / 360 * ID_W), 0, ID_W - 1);
+        const py = clamp(Math.floor((90 - lat) / 180 * ID_H), 0, ID_H - 1);
+        const d = ictx.getImageData(px, py, 1, 1).data;
+        if (d[2] !== 255) return null;
+        const id = (d[0] << 8) | d[1];
+        return COUNTRIES[id] ? id : null;
+    }
+
+    let hoverPending = null;
+    function scheduleHover(e) {
+        const first = hoverPending === null;
+        hoverPending = {x: e.clientX, y: e.clientY};
+        if (!first) return;
+        requestAnimationFrame(() => {
+            const pt = hoverPending; hoverPending = null;
+            if (!pt || dragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const found = pickCountry(pt.x - rect.left, pt.y - rect.top);
+            if (found !== null) showTooltip(pt.x, pt.y, guessedCountries.has(found) ? COUNTRIES[found] : '???');
+            else hideTooltip();
+        });
+    }
+
+    /* Reveal a guessed country once the globe has (nearly) arrived */
+    function scheduleReveal(id, delay) {
+        setTimeout(() => {
+            if (!colorOf.has(id)) return;   // reset in the meantime
+            paintCountry(id);
+            addLabel(id, false);
+        }, delay * 0.8);
+    }
+
+    /* ---------- Game logic ---------- */
+    function revealCountry(id) {
+        const ci = colorIndex % PALETTE.length;
+        colorOf.set(id, ci);
+        colorIndex++;
+        return ci;
+    }
+
+    function processGuess(raw) {
+        if (awaitingChoice) return;
+        const normalized = raw.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        if (!normalized) return;
+
+        let matchedId = null;
+        if (ALIASES[normalized] !== undefined) matchedId = ALIASES[normalized];
+        if (matchedId === null) {
+            for (const [id, name] of Object.entries(COUNTRIES)) {
+                if (name.toLowerCase() === normalized) { matchedId = +id; break; }
+            }
+        }
+        if (matchedId === null || !COUNTRIES[matchedId]) return;
+
+        if (guessedCountries.has(matchedId)) {
+            showToast(COUNTRIES[matchedId]+' — already found!','duplicate');
+            flyTo(matchedId);
+            input.value = '';
+            return;
+        }
+
+        startTimer();
+        guessedCountries.add(matchedId);
+        guessedOrder.push(matchedId);
+
+        const name = COUNTRIES[matchedId];
+        const ci = revealCountry(matchedId);
+        const dur = flyTo(matchedId);                       // rotate the globe to the country
+        scheduleReveal(matchedId, dur);                     // colour + label + pulse as the globe settles
+
+        addRecentGuess(name, ci);
+        showToast(name+' 🎯');
+
+        const count = guessedCountries.size;
+        document.getElementById('scoreNumber').textContent = count;
+        document.getElementById('progressBar').style.width = ((count/totalCountries)*100)+'%';
+        input.value = '';
+        saveProgress();
+
+        if (count >= totalCountries) {
+            stopTimer();
+            recordCurrentGame('completed');
+            const m = Math.floor(seconds/60), s = seconds%60;
+            document.getElementById('completionText').textContent =
+                'You named all '+totalCountries+' countries in '+m+'m '+s+'s!';
+            setTimeout(() => {
+                document.getElementById('completionOverlay').classList.add('show');
+                showToast('🏆 Geography Master!','complete');
+            }, 1500);
+        }
+    }
+
+    function giveUp() {
+        stopTimer();
+        recordCurrentGame('gaveup');
+        Object.keys(COUNTRIES).forEach(k => {
+            const id = +k;
+            if (!guessedCountries.has(id)) {
+                guessedCountries.add(id);
+                missed.add(id);
+                addLabel(id, true);
+            }
+        });
+        repaintAll();
+        missed.forEach(addShape);
+        idle = false;
+        animateTo(viewCenter()[0], viewCenter()[1], 1, 600);
+        needsRender = true;
+        saveProgress();
+        showToast('You found '+guessedOrder.length+' / '+totalCountries+' countries','complete');
+    }
+
+    function resetGame() {
+        recordCurrentGame('restarted');   // an unfinished game is kept in the history
+        gameRecorded = false;
+        guessedCountries.clear();
+        guessedOrder = [];
+        colorOf.clear();
+        missed.clear();
+        colorIndex = 0;
+        seconds = 0;
+        stopTimer();
+        document.getElementById('timer').textContent = '00:00';
+        document.getElementById('scoreNumber').textContent = '0';
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('recentGuesses').innerHTML = '';
+        document.getElementById('completionOverlay').classList.remove('show');
+        input.value = '';
+        saveProgress();
+        clearLabels();
+        clearPulses();
+        clearShapes();
+        repaintAll();
+        animateTo(-DEFAULT_ROTATION[0], -DEFAULT_ROTATION[1], 1, 900);
+        input.focus();
+    }
+
+    /* ---------- Saved progress ---------- */
+    const SAVE_KEY = 'geoguess-progress-v1';
+    let awaitingChoice = false;
+
+    function saveProgress() {
+        try {
+            if (!guessedOrder.length && !missed.size) { localStorage.removeItem(SAVE_KEY); return; }
+            localStorage.setItem(SAVE_KEY, JSON.stringify({
+                order: guessedOrder,
+                colors: Array.from(colorOf.entries()),
+                colorIndex: colorIndex,
+                seconds: seconds,
+                missed: Array.from(missed)
+            }));
+        } catch (e) {}
+    }
+    function loadProgress() {
+        try {
+            const d = JSON.parse(localStorage.getItem(SAVE_KEY));
+            if (d && Array.isArray(d.order) && Array.isArray(d.missed) && (d.order.length || d.missed.length)) return d;
+        } catch (e) {}
+        return null;
+    }
+
+    function restoreProgress(d) {
+        guessedOrder = d.order.filter(id => COUNTRIES[id]);
+        guessedOrder.forEach(id => guessedCountries.add(id));
+        (d.colors || []).forEach(([id, ci]) => { if (COUNTRIES[id]) colorOf.set(id, ci % PALETTE.length); });
+        colorIndex = d.colorIndex || guessedOrder.length;
+        seconds = d.seconds || 0;
+        gameRecorded = (d.missed || []).length > 0 || guessedOrder.length >= totalCountries;
+        (d.missed || []).forEach(id => { if (COUNTRIES[id]) { missed.add(id); guessedCountries.add(id); } });
+
+        guessedOrder.forEach(id => { if (colorOf.has(id)) { addLabel(id, false); addShape(id); } });
+        missed.forEach(id => { addLabel(id, true); addShape(id); });
+        guessedOrder.slice(-6).forEach(id => addRecentGuess(COUNTRIES[id], colorOf.get(id) || 0));
+        repaintAll();
+
+        const count = guessedOrder.length;
+        document.getElementById('scoreNumber').textContent = count;
+        document.getElementById('progressBar').style.width = ((guessedCountries.size / totalCountries) * 100) + '%';
+        document.getElementById('timer').textContent =
+            String(Math.floor(seconds/60)).padStart(2,'0') + ':' + String(seconds%60).padStart(2,'0');
+    }
+
+    function askAboutSavedGame() {
+        const d = loadProgress();
+        if (!d) return false;
+        const found = d.order.length;
+        const m = Math.floor((d.seconds || 0) / 60), sec = (d.seconds || 0) % 60;
+        document.getElementById('resumeText').textContent =
+            'You had found ' + found + ' / ' + totalCountries + ' countries (' + m + 'm ' + sec + 's)' +
+            (d.missed.length ? ' and gave up' : '') + '. Pick up where you left off?';
+        awaitingChoice = true;
+        document.getElementById('resumeOverlay').classList.add('show');
+        document.getElementById('btnResume').focus();
+        document.getElementById('btnResume').addEventListener('click', () => {
+            restoreProgress(d);
+            awaitingChoice = false;
+            document.getElementById('resumeOverlay').classList.remove('show');
+            input.focus();
+        });
+        document.getElementById('btnFresh').addEventListener('click', () => {
+            if (!d.missed.length && d.order.length < totalCountries) addRecord(d.order.length, d.seconds || 0, 'restarted');
+            try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+            awaitingChoice = false;
+            document.getElementById('resumeOverlay').classList.remove('show');
+            input.focus();
+        });
+        return true;
+    }
+
+    /* ---------- Records (history of finished / abandoned games) ---------- */
+    const RECORDS_KEY = 'geoguess-records-v1';
+    let gameRecorded = false;   // so one game is only written to the history once
+
+    function loadRecords() {
+        try { const r = JSON.parse(localStorage.getItem(RECORDS_KEY)); if (Array.isArray(r)) return r; } catch (e) {}
+        return [];
+    }
+    function addRecord(found, secs, outcome, when) {
+        if (!found) return;
+        const r = loadRecords();
+        r.unshift({found: found, total: totalCountries, seconds: secs, outcome: outcome, date: when || Date.now()});
+        try { localStorage.setItem(RECORDS_KEY, JSON.stringify(r.slice(0, 100))); } catch (e) {}
+    }
+    function recordCurrentGame(outcome) {
+        if (gameRecorded) return;
+        gameRecorded = true;
+        addRecord(guessedOrder.length, seconds, outcome);
+    }
+    const fmtTime = t => String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0');
+    const OUTCOME_LABEL = {completed: 'Completed', gaveup: 'Gave up', restarted: 'Restarted'};
+
+    function showRecords() {
+        const r = loadRecords();
+        const list = document.getElementById('recordsList');
+        const stats = document.getElementById('recordsStats');
+        list.innerHTML = '';
+        if (!r.length) {
+            stats.textContent = '';
+            list.innerHTML = '<div class="records-empty">No finished games yet — your results will appear here.</div>';
+        } else {
+            const bestFound = Math.max(...r.map(x => x.found));
+            const done = r.filter(x => x.outcome === 'completed');
+            const fastest = done.length ? Math.min(...done.map(x => x.seconds)) : null;
+            stats.innerHTML = 'Games played: <b>' + r.length + '</b> &nbsp;·&nbsp; Best: <b>' + bestFound + ' / ' + totalCountries + '</b>' +
+                (fastest !== null ? ' &nbsp;·&nbsp; Fastest full completion: <b>' + fmtTime(fastest) + '</b>' : '');
+            r.forEach(x => {
+                const d = new Date(x.date);
+                const row = document.createElement('div');
+                row.className = 'record-row' + (x.found === bestFound ? ' best' : '');
+                row.innerHTML = '<div class="record-date">' + d.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'}) +
+                    ' ' + d.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'}) +
+                    '<small>' + (OUTCOME_LABEL[x.outcome] || '') + '</small></div>' +
+                    '<div class="record-score">' + x.found + ' / ' + x.total + '</div>' +
+                    '<div class="record-time">' + fmtTime(x.seconds) + '</div>';
+                list.appendChild(row);
+            });
+        }
+        document.getElementById('recordsOverlay').classList.add('show');
+    }
+    function hideRecords() { document.getElementById('recordsOverlay').classList.remove('show'); input.focus(); }
+    document.getElementById('btnRecords').addEventListener('click', showRecords);
+    document.getElementById('btnCloseRecords').addEventListener('click', hideRecords);
+    document.getElementById('recordsOverlay').addEventListener('click', e => { if (e.target.id === 'recordsOverlay') hideRecords(); });
+    document.getElementById('btnClearRecords').addEventListener('click', () => {
+        try { localStorage.removeItem(RECORDS_KEY); } catch (e) {}
+        showRecords();
+    });
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') hideRecords(); });
+
+    window.addEventListener('beforeunload', saveProgress);
+
+    /* ---------- Events ---------- */
+    input.addEventListener('input', function() { processGuess(this.value); });
+    input.addEventListener('keydown', function(e) { if (e.key==='Enter') processGuess(this.value); });
+
+    // Type anywhere: any printable key (or backspace) jumps focus into the guess box
+    window.addEventListener('keydown', e => {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (document.activeElement === input) return;
+        if (e.key.length === 1 || e.key === 'Backspace') input.focus();
+    });
+    window.addEventListener('focus', () => input.focus());
+
+    const refocusAfter = fn => () => { fn(); document.activeElement.blur(); input.focus(); };
+    document.getElementById('btnReveal').addEventListener('click', refocusAfter(giveUp));
+    document.getElementById('btnReset').addEventListener('click', refocusAfter(resetGame));
+    document.getElementById('zoomIn').addEventListener('click', refocusAfter(() => zoomBy(1.5)));
+    document.getElementById('zoomOut').addEventListener('click', refocusAfter(() => zoomBy(0.67)));
+    document.getElementById('zoomReset').addEventListener('click', refocusAfter(() => {
+        idle = false;
+        animateTo(-DEFAULT_ROTATION[0], -DEFAULT_ROTATION[1], 1, 800);
+    }));
+
+    window.addEventListener('resize', resizeCanvas);
+
+    /* Light / dark theme (remembered between visits, defaults to the system setting) */
+    function setTheme(dark) {
+        document.body.classList.toggle('dark', dark);
+        document.getElementById('btnTheme').textContent = dark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+        if (dark) { OCEAN = '#1e4468'; LAND = '#64748b'; BORDER = 'rgba(226,232,240,0.35)'; GRAT = 'rgba(255,255,255,0.10)'; }
+        else      { OCEAN = '#a9cde8'; LAND = '#e2e8c6'; BORDER = 'rgba(100,116,139,0.6)'; GRAT = 'rgba(255,255,255,0.35)'; }
+        globeMesh.material.uniforms.nightMul.value.set(...(dark ? [0.42, 0.46, 0.7] : [0.3, 0.34, 0.54]));
+        try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+        if (features.length) repaintAll();
+        needsRender = true;
+    }
+    document.getElementById('btnTheme').addEventListener('click', refocusAfter(() => setTheme(!document.body.classList.contains('dark'))));
+    let startDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    try { const saved = localStorage.getItem('theme'); if (saved) startDark = saved === 'dark'; } catch (e) {}
+
+    function setDayNight(on) {
+        globeMesh.material.uniforms.dayNight.value = on ? 1 : 0;
+        document.getElementById('btnDayNight').classList.toggle('off', !on);
+        try { localStorage.setItem('daynight', on ? 'on' : 'off'); } catch (e) {}
+        needsRender = true;
+    }
+    document.getElementById('btnDayNight').addEventListener('click', refocusAfter(() =>
+        setDayNight(globeMesh.material.uniforms.dayNight.value < 0.5)));
+    let startDayNight = true;
+    try { startDayNight = localStorage.getItem('daynight') !== 'off'; } catch (e) {}
+
+    function loadSatellite(cb) {
+        if (satImg) return cb();
+        const load = () => {
+            const img = new Image();
+            img.onload = () => { satImg = img; cb(); };
+            img.src = SATELLITE_IMAGE;
+        };
+        if (typeof SATELLITE_IMAGE !== 'undefined') return load();
+        const sc = document.createElement('script');   // only fetched the first time it is needed
+        sc.src = 'satellite-data.js';
+        sc.onload = load;
+        sc.onerror = () => showToast('Satellite image not found', 'duplicate');
+        document.head.appendChild(sc);
+    }
+    function setSatellite(on) {
+        const apply = () => {
+            satMode = on;
+            document.getElementById('btnSat').classList.toggle('off', !on);
+            try { localStorage.setItem('maptype', on ? 'satellite' : 'map'); } catch (e) {}
+            applyShapeMode();
+            if (features.length) repaintAll();
+            needsRender = true;
+        };
+        if (on) loadSatellite(apply); else apply();
+    }
+    document.getElementById('btnSat').addEventListener('click', refocusAfter(() => setSatellite(!satMode)));
+    let startSat = false;
+    try { startSat = localStorage.getItem('maptype') === 'satellite'; } catch (e) {}
+
+    setTheme(startDark);
+    setDayNight(startDayNight);
+    updateSun();
+    initGlobe();
+    if (startSat) setSatellite(true);
+    if (!askAboutSavedGame()) input.focus();
+    </script>
+</body>
+</html>
